@@ -1,0 +1,10 @@
+python
+power bi
+excel
+pandas
+machine learning
+Tableau
+Deep Learning
+SQL
+NLP
+Agentic AI

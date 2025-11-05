@@ -1,0 +1,12 @@
+# Numpy Notes
+
+## Import Numpy
+import numpy
+    Use function, modules, classes
+
+    Library
+        modules
+            classes
+                functions
+
+import numpy as np
