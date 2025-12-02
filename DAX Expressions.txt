@@ -1,0 +1,422 @@
+Two types of DAX expressions:
+	- Calculated Columns
+		- row filter
+			- Does row-level calc.
+		- Creates a column
+	- Measures
+		- Filter context
+			- visual
+			- slicer
+			- filters pane
+
+
+
+Calculated Columns:
+--------------------
+Column = SUM( [Hours] )
+
+Column2 = [Hours] / [TotalHours]
+
+Column3 =
+SUMX(
+	FILTER(
+		ALL('Hours'),
+		[Category] = "Billable" && [EmployeeID] = EARLIER([EmployeeID])
+	),
+	[Hours]
+)
+
+
+ALL() -> REMOVES ALL THE FILTERS FORM THE TABLE OR COLUMN: visual, slicer, filter
+
+
+Hours_test = SUM( 'Hours'[Hours] )
+
+
+Hours_test2 = SUMX( ALL('Hours'),
+		'Hours'[Hours])
+
+
+
+FILTER ( table, filter1, filter2, filter3, ... )
+
+
+filter1
+[Category] = "Billable" 
+&& 
+[EmployeeID] = EARLIER([EmployeeID])
+
+&& - and
+|| - or		
+
+
+X functions
+	- Iterating functions
+
+func_iterating(TABLE, expression)
+	- Executes the expression for each row of the table.
+
+
+
+
+
+Column4 =
+SUMX(
+	FILTER(
+		ALL('Hours'),
+		[EmployeeID] = EARLIER([EmployeeID])
+	),
+	[Hours]
+)
+
+
+
+CALCULATE( expression, filter1, filter2, filter3, ... )
+
+	expression -> DAX (measure or calculated column for.)
+
+	- It combines all the filters using AND operator
+	- But if the filters are applied on different columns then we the unexpected results
+
+FILTER( table, filter1, filter2, filter3, ... )
+
+	- To create a virtual table
+
+
+
+Column5 = [Column3] / [Column4]
+
+Column5 = DIVIDE( [Column3], [Column4], 0 )
+
+
+Create a new column in Budgets and Forecasts table:
+
+MonthYear = [Month] & "2017"
+
+
+Create a similar column in Calendar table:
+
+MonthYear = LEFT ( [Month], 3 ) & [Year]
+
+
+Create New Table:
+
+MonthYears = DISTINCT ( 'Calendar'[MonthYear] )
+
+
+
+
+Measures
+============
+
+
+Measure =
+SUMX(
+	FILTER(
+		ALL('Hours'),
+		[Category] = "Billable"
+	),
+	[Hours]
+)
+
+
+
+SUMX, COUNTAX, MINX, MAXX, AVERAGEX, ....
+	- Iterators
+
+
+
+Column = SUM( [Hours] )
+
+
+= SUMX ( table, expression )
+
+	Iterates through each row of the 'table'
+	For each row it executes the 'expression'
+	It sums all the values that result from expression
+
+
+
+Column  = SUM ( [Hours] )
+
+Column6 = SUMX ( 'Hours' , [TotalHoursBilled] * 1.1 )
+
+
+
+Measure =
+SUMX(
+	FILTER(
+		ALL('Hours'),
+		[Category] = "Billable"
+	),
+	[Hours]
+)
+
+
+Measure2 =
+SUMX(
+	ALL('Hours'),
+	[Hours]
+)
+
+
+
+
+Measure =
+SUMX(
+	FILTER(
+		'Hours',
+		'Hours'[Category] = "Billable"
+	),
+	'Hours'[Hours]
+)
+
+Measure2 =
+SUMX(
+	'Hours',
+	'Hours'[Hours]
+)
+
+Measure2 = SUM ( 'Hours'[Hours] )
+
+
+Rename Measure as Total Billable Hours
+
+
+PK -> 	reported total hours: 	30
+	billable hours:		20
+	% utilization:		20/30	(66%)
+	Total hours in a week:	40
+	Actual % utilization:	20/40	(50%)
+
+
+
+WorkHours = IF( [IsWorkday] = 1, 8, 0 )
+WorkHours = IF( [IsWorkday], 8, 0 )
+
+
+Total Hours = SUM( 'Calendar'[WorkHours] )
+
+
+% Utilization = DIVIDE( [Total Billable Hours], [Total Hours], 0 )
+
+
+CALCULATED COLUMNS:
+-------------------
+TotalBillableHours =
+SUMX(
+	FILTER(
+		ALL('Hours'),
+		[Category] = "Billable" && [EmployeeID] = EARLIER([EmployeeID])
+	),
+	[Hours]
+)
+
+
+TotalHours =
+SUMX(
+	FILTER(
+		ALL('Hours'),
+		[EmployeeID] = EARLIER([EmployeeID])
+	),
+	[Hours]
+)
+
+
+% Utilization = DIVIDE( [TotalBillableHours], [TotalHours], 0 )
+
+
+
+
+MEASURES
+---------
+Total Billable Hours = 
+SUMX(
+	FILTER(
+		'Hours',
+		'Hours'[Category] = "Billable"
+	),
+	'Hours'[Hours]
+)
+
+
+
+Total Hours =
+SUM(
+	'Calendar'[WorkHours]
+)
+
+% Utlization = DIVIDE( [Total Billable Hours], [Total Hours], 0) 
+
+
+Four columns: in the visual
+
+column 1: Name
+column 2: Total sales
+column 3: grand total sales
+column 4: percentage of each sales person
+
+tbl_tsales = SUM( 'sales'[Sales] )
+tbl_gtsales = SUMX( ALL( 'sales' ), 'sales'[Sales] )
+tbl_pctsales = DIVIDE ( [tbl_tsales], [tbl_gtsales], 0 )
+
+
+Rename [Total Hours] to [Total Hours by Employee]
+
+
+
+Total Hours =
+IF(
+	HASONEVALUE( People[Name] ),
+	[Total Hours by Employee],
+	SUMX(
+		SUMMARIZE(
+			'People', People[Name],
+			"_Hours", [Total Hours by Employee]
+		),
+		[_Hours]
+	)	
+)
+Name	_Hours
+A	100
+B	70
+C	50
+D	30
+
+
+% Utlization =
+VAR __utilization = 
+	DIVIDE( [Total Billable Hours], [Total Hours], 0) 
+RETURN
+	__utilization + 0
+
+
+% Utlization =
+VAR __utilization = 
+	DIVIDE( [Total Billable Hours], [Total Hours], 0) 
+VAR __days = COUNTROWS('Hours')
+RETURN
+	IF( ISBLANK( __days ),
+		BLANK(),
+		__utilization + 0
+	)
+
+
+
+Total Rows in Hours = COUNTROWS('Hours')
+
+
+
+SWITCH( <expression>,
+	<value1>, <result1>,
+	<value2>, <result2>,
+	<value3>, <result3>,
+	...
+	<else>)
+
+TeluguWeek = SWITCH( [WeekdayNum],
+			1, "Soma",
+			2, "Mangala",
+			3, "Budha",
+			4, "Guru",
+			5, "Shukra",
+			6, "Shani",
+			7, "Adhi")
+
+
+
+
+Total Hours =
+SWITCH(
+	MAX( 'People'[EmployeeType] ),
+	"HOURLY", [Total Billable Hours],
+	"SUB-CONTRACTOR", [Total Billable Hours],
+	"SALARY",
+		IF(
+		 HASONEVALUE( People[Name] ),
+		 [Total Billable Hours],
+		 SUMX(
+			SUMMARIZE(
+			 'People',People[Name],
+			 "__Hours", [Total Hours by Employee]
+			),
+			[__Hours]
+		 )
+		),
+	BLANK()
+)
+
+
+
+MAX_E_TYPE = MAX( 'People'[EmployeeType] )
+
+
+
+SUM( 'Hours'[Hours] )
+AVERAGE( 'Hours'[Hours] )
+MIN( 'Hours'[Hours] )
+MAX( 'Hours'[Hours] )
+
+
+
+
+Create a matrix visual:
+- Rows: Name (people)
+- Columns: EmployeeType (people)
+- Values: Total Hours
+ 	  Avg. Hours
+	  Count Distinct
+
+
+Create a clustered column chart:
+- x-axis: location
+- y-axis: compare total works with total  billable hours
+
+
+
+
+% Utilization =
+	VAR __utilization =
+		DIVIDE([Total Billable Hours], [Total Hours], 0)
+	VAR __days = COUNTROWS('Hours')
+RETURN
+	SWITCH(TRUE(),
+		ISINSCOPE('People'[Name]) && ISBLANK(__days),
+BLANK(),
+		ISINSCOPE('People'[Name]), __utilization + 0,
+			VAR __tempTable =
+				SUMMARIZE(
+					'People',
+					'People'[Name],
+					"__billableHours", [Total Billable Hours],
+					"__totalHours", [Total Hours]
+				)
+			VAR __billedHours = SUMX(__tempTable, [__billableHours])
+			VAR __hours = SUMX(__tempTable, [__totalHours])
+		RETURN
+			DIVIDE(__billedHours, __hours,0)
+)
+
+
+__tempTable:
+
+Name	__billableHours	__totalHours
+-----	---------------	-------------
+n1	10		30
+n2	15		20
+n3	8		12
+n4	30		35
+
+
+
+
+
+Examples for ISINSCOPE()
+-------------------------
+Sales Info =
+SWITCH(TRUE(),
+	ISINSCOPE( 'temp1'[Subcategory] ), "Showing subcategory level",
+	ISINSCOPE( 'temp1'[Category] ), "Showing category level",
+	"Other level"
+)
+
