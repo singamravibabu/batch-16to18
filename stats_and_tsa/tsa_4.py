@@ -38,6 +38,7 @@ df = pd.DataFrame(
 )
 df.set_index('Date', inplace=True)
 
+'''
 # Creating a month column
 df['Month'] = df.index.month
 monthly_avg = df.groupby('Month')['Sales'].mean()
@@ -51,6 +52,7 @@ df['RollingMean'] = df['Sales'].rolling(window=12, center=True).mean()
 
 # Calculate the detrended series: sales - trend
 df['Detrended'] = df['Sales'] - df['RollingMean']
+'''
 
 # Perform additive decomposition
 decomposition = seasonal_decompose(
@@ -59,6 +61,13 @@ decomposition = seasonal_decompose(
 			period=12
 )
 
+
+df['Trend'] = decomposition.trend
+df['Seasonal'] = decomposition.seasonal
+df['Residual'] = decomposition.resid
+
+
+'''
 # Multiplicative decomposition
 decomposition_mul = seasonal_decompose(
 	df['Sales'], 
@@ -77,28 +86,27 @@ plt.figure(figsize=(12, 6))
 # sns.lineplot(x=date_rng, y=sales)
 # sns.lineplot(data=df, x=df.index, y=df['Sales'])
 # sns.lineplot(data=df, x=df.index, y=df['RollingMean'])
-'''
 sns.lineplot(
 	x=monthly_avg.index, 
 	y=monthly_avg.values,
     marker='s',
     markersize=10
 )
-'''
-'''sns.lineplot(
+
+sns.lineplot(
     x=yearly_avg.index, 
     y=yearly_avg.values,
     marker='o',
     markersize=10
-)'''
-'''
+)
+
 sns.lineplot(
 	x=df.index, 
 	y='Detrended', 
 	data=df
 )
 plt.axhline(0, color='red', linestyle='--')
-'''
+
 decomposition.plot()
 plt.suptitle(
 	'Additive Decomposition of Monthly Sales', 
@@ -106,3 +114,6 @@ plt.suptitle(
 )
 decomposition_mul.plot()
 plt.show()
+'''
+
+print(df[["Sales", "Trend", "Seasonal", "Residual"]].head(15))
