@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from statsmodels.tsa.seasonal import seasonal_decompose
 
 # Generate date range
 date_rng = pd.date_range(
@@ -51,6 +52,22 @@ df['RollingMean'] = df['Sales'].rolling(window=12, center=True).mean()
 # Calculate the detrended series: sales - trend
 df['Detrended'] = df['Sales'] - df['RollingMean']
 
+# Perform additive decomposition
+decomposition = seasonal_decompose(
+			df['Sales'], 
+			model='additive', 
+			period=12
+)
+
+# Multiplicative decomposition
+decomposition_mul = seasonal_decompose(
+	df['Sales'], 
+	model='multiplicative', 
+	period=12
+)
+
+
+
 # print(df.head(20))
 
 plt.figure(figsize=(12, 6))
@@ -74,11 +91,18 @@ sns.lineplot(
     marker='o',
     markersize=10
 )'''
-
+'''
 sns.lineplot(
 	x=df.index, 
 	y='Detrended', 
 	data=df
 )
 plt.axhline(0, color='red', linestyle='--')
+'''
+decomposition.plot()
+plt.suptitle(
+	'Additive Decomposition of Monthly Sales', 
+	fontsize=14
+)
+decomposition_mul.plot()
 plt.show()
